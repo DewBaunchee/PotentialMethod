@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.Cursor?>
+<?import javafx.scene.chart.BarChart?>
+<?import javafx.scene.chart.CategoryAxis?>
+<?import javafx.scene.chart.NumberAxis?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.ColumnConstraints?>
+<?import javafx.scene.layout.GridPane?>
+
+<AnchorPane prefHeight="394.0" prefWidth="482.0" xmlns="http://javafx.com/javafx/15.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="by.varyvoda.matvey.potentialmethod.HelloController">
+    <AnchorPane AnchorPane.bottomAnchor="320.0" AnchorPane.leftAnchor="10.0" AnchorPane.rightAnchor="10.0" AnchorPane.topAnchor="10.0">
+        <GridPane fx:id="grid" alignment="CENTER" gridLinesVisible="true" layoutX="0.7071067690849304" layoutY="0.7071067690849304" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+            <columnConstraints>
+                <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
+            </columnConstraints>
+         <cursor>
+            <Cursor fx:constant="HAND" />
+         </cursor>
+        </GridPane>
+    </AnchorPane>
+   <BarChart fx:id="chart" animated="false" layoutX="-9.0" layoutY="182.0" legendVisible="false" prefHeight="260.0" prefWidth="500.0" AnchorPane.bottomAnchor="10.0" AnchorPane.leftAnchor="10.0" AnchorPane.rightAnchor="10.0">
+     <xAxis>
+       <CategoryAxis label="Digit" side="BOTTOM" />
+     </xAxis>
+     <yAxis>
+       <NumberAxis label="Probability" side="LEFT" />
+     </yAxis>
+   </BarChart>
+</AnchorPane>
