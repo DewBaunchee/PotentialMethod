@@ -1,12 +1,18 @@
 package by.varyvoda.matvey.potentialmethod.domain
 
-class Scale(domainFrom: Double, domainTo: Double, realFrom: Double, realTo: Double) {
+import kotlin.math.round
 
-    private val shift: Double = domainFrom - realFrom
+class Scale(domainFrom: Int, domainTo: Int, realFrom: Int, realTo: Int) {
 
-    private val ratio: Double = (domainTo - domainFrom) / (realTo - realFrom)
+    private val shift: Int = domainFrom - realFrom
 
-    fun scale(domain: Double): Double {
-        return (domain - shift) / ratio
+    private val ratio: Double = (domainTo.toDouble() - domainFrom) / (realTo - realFrom)
+
+    fun scale(domain: Int): Int {
+        return round((domain - shift) / ratio).toInt()
+    }
+
+    fun invert(real: Int): Int {
+        return round(real * ratio + shift).toInt()
     }
 }

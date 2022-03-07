@@ -1,9 +1,11 @@
 package by.varyvoda.matvey.potentialmethod
 
-import by.varyvoda.matvey.potentialmethod.domain.Cluster
-import by.varyvoda.matvey.potentialmethod.domain.PotentialMethod
-import by.varyvoda.matvey.potentialmethod.domain.Sample
 import by.varyvoda.matvey.potentialmethod.domain.Vector
+import by.varyvoda.matvey.potentialmethod.domain.drawing.Plot
+import by.varyvoda.matvey.potentialmethod.domain.image.SampleImage
+import by.varyvoda.matvey.potentialmethod.domain.learning.Cluster
+import by.varyvoda.matvey.potentialmethod.domain.learning.PotentialMethod
+import by.varyvoda.matvey.potentialmethod.domain.learning.Sample
 import javafx.collections.FXCollections
 import javafx.event.EventHandler
 import javafx.fxml.FXML
@@ -17,14 +19,14 @@ import javafx.scene.paint.Color
 import java.io.File
 import java.io.FileNotFoundException
 import java.util.stream.IntStream
+import kotlin.streams.toList
 
 
-const val cols = 3
-const val rows = 5
+const val cols = 3 * 2
+const val rows = 5 * cols / 3
 
 val activeBackground = Background(BackgroundFill(Color.BLACK, CornerRadii.EMPTY, Insets.EMPTY))
 val nonActiveBackground = Background(BackgroundFill(Color.WHITE, CornerRadii.EMPTY, Insets.EMPTY))
-const val activeClass = "active"
 
 class HelloController {
 
@@ -36,25 +38,26 @@ class HelloController {
 
     private lateinit var potentialMethod: PotentialMethod
 
-    private val sample: IntArray = IntArray(rows * cols) { 0 }
+    private val plot = Plot(rows, cols)
 
     private val bars = FXCollections.observableList(mutableListOf<XYChart.Series<String, Double>>())
 
+    private var filterPlotChanges = false
+
     @FXML
     fun initialize() {
+        grid.onMouseReleased = EventHandler { evaluateClasses() }
         for (col in 0 until cols) {
             for (row in 0 until rows) {
                 val pane = Pane()
                 pane.background = nonActiveBackground
 
-                pane.styleProperty().addListener { _, _, new ->
-                    pane.background = if (new == activeClass) activeBackground else nonActiveBackground
-                    sample[row * cols + col] = if (new == activeClass) 1 else 0
+                plot.observablePixels[row][col].addListener { _, _, new ->
+                    pane.background = if (new == 1) activeBackground else nonActiveBackground
                 }
 
                 val handler = EventHandler { mouseEvent: MouseEvent ->
-                    pane.style = if (mouseEvent.isShiftDown) "" else activeClass
-                    evaluateClasses()
+                    plot.observablePixels[row][col].value = if (mouseEvent.isShiftDown) 0 else 1
                 }
                 pane.onMouseDragOver = handler
                 pane.onMouseClicked = handler
@@ -75,23 +78,43 @@ class HelloController {
             }
         }
 
+        val plotChangeWrapper = { plotChanger: Runnable ->
+            filterPlotChanges = true
+            plotChanger.run()
+            filterPlotChanges = false
+            evaluateClasses()
+        }
+
         grid.sceneProperty().addListener { _, _, scene ->
             scene.setOnKeyPressed { keyEvent ->
-                if (keyEvent.code == KeyCode.C && keyEvent.isShiftDown) {
-                    grid.children.forEach { it.style = "" }
+                if (!keyEvent.isShiftDown) return@setOnKeyPressed
+
+                if (keyEvent.code == KeyCode.R) {
+                    plotChangeWrapper {
+                        plot.clear()
+                    }
+                }
+                if (keyEvent.code == KeyCode.S) {
+                    plotChangeWrapper {
+                        plot.setPlot(SampleImage(plot.getIntPlot()).normalize(rows, cols).pixels)
+                    }
+                }
+                if (keyEvent.code == KeyCode.D) {
+                    plotChangeWrapper {
+                        plot.setPlot(SampleImage(plot.getIntPlot()).normalize(5, 3).pixels)
+                    }
                 }
             }
         }
 
         chart.data = bars
-
-        createPerceptron()
+        createMethod()
     }
 
     private fun evaluateClasses() {
         bars.clear()
         bars.add(
-            potentialMethod.evaluateClasses(Vector(values = sample))
+            potentialMethod.evaluateClasses(SampleImage(plot.getIntPlot()).normalize(rows, cols).getVector())
                 .entries.stream()
                 .collect(
                     { XYChart.Series<String, Double>() },
@@ -101,25 +124,26 @@ class HelloController {
         )
     }
 
-    private fun createPerceptron() {
+    private fun createMethod() {
         potentialMethod = PotentialMethod(getClusters()) { r -> 10.0 / (1.0 + r * r) }
     }
 
     private fun getClusters(): Map<Int, Cluster> {
-        val samplesFolder = File("samples\\binary")
+        val samplesFolder = File("samples\\img")
         if (!samplesFolder.exists()) throw FileNotFoundException("Cannot find samples folder.")
 
+        var s = false
         val samples = samplesFolder.listFiles()!!.flatMap { folder ->
             if (!folder.exists()) listOf()
-            else folder.listFiles()!!.map { file ->
-                Sample(
-                    Vector(values = file.readText()
-                        .split(" ", "\r\n")
-                        .map { it.toInt() }
-                        .toIntArray()),
-                    folder.name.toInt()
-                )
-            }
+            else folder.listFiles()!!.asList()
+                .parallelStream()
+                .map { file ->
+                    if (!s) {
+                        s = true
+                        plot.setPlot(SampleImage.fromFile(file).normalize(rows, cols).pixels)
+                    }
+                    Sample(SampleImage.fromFile(file).normalize(rows, cols).getVector(), folder.name.toInt())
+                }.toList()
         }
 
         return samples.stream()

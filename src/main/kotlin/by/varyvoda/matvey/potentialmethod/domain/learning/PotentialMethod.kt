@@ -1,4 +1,6 @@
-package by.varyvoda.matvey.potentialmethod.domain
+package by.varyvoda.matvey.potentialmethod.domain.learning
+
+import by.varyvoda.matvey.potentialmethod.domain.Vector
 
 
 class PotentialMethod(
